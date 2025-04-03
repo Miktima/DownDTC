@@ -29,7 +29,7 @@ func getRes(url string) (int, error) {
 	// Отправляем запрос
 	resp, err := client.Do(req)
 	if err != nil {
-		fmt.Printf("Error with GET request: %v\n", err)
+		//fmt.Printf("Error with GET request: %v\n", err)
 		return Scode, err
 	}
 	Scode = resp.StatusCode
