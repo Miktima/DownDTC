@@ -1,0 +1,3 @@
+services:
+  downdtc:
+    container_name: downdtc
