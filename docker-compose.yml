@@ -1,3 +1,4 @@
 services:
   downdtc:
+    build: .
     container_name: downdtc

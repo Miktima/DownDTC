@@ -14,4 +14,4 @@ WORKDIR /build
 
 COPY --from=builder /build/downdtc /build/downdtc
 
-CMD [". /downdtc"]
+CMD ["./downdtc"]
