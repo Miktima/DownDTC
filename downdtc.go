@@ -9,12 +9,12 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"time"
 )
 
 func getRes(url string) (int, error) {
-	// функция получения ресурсов по указанному адресу url с использованием User-Agent
-	// возвращает загруженный HTML контент
-	client := &http.Client{}
+	// функция получения ресурсов по указанному адресу url с проверкой ошибок
+	client := &http.Client{Timeout: 20 * time.Second}
 	var Scode int
 	Scode = 0
 
@@ -30,6 +30,10 @@ func getRes(url string) (int, error) {
 	resp, err := client.Do(req)
 	if err != nil {
 		//fmt.Printf("Error with GET request: %v\n", err)
+		if os.IsTimeout(err) {
+			// A timeout error occurred
+			Scode = 504
+		}	
 		return Scode, err
 	}
 	Scode = resp.StatusCode
