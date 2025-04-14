@@ -10,6 +10,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/go-co-op/gocron/v2"
 )
 
 func getRes(url string) (int, error) {
@@ -33,7 +35,7 @@ func getRes(url string) (int, error) {
 		if os.IsTimeout(err) {
 			// A timeout error occurred
 			Scode = 504
-		}	
+		}
 		return Scode, err
 	}
 	Scode = resp.StatusCode
@@ -144,16 +146,45 @@ func main() {
 		}
 	}
 
-	// Читаем файлы со списками. Файлы в порядке, указанном в конфигурационном файле
+	// Проверяем ресурсы
 	for _, res := range resources {
-
 		statuscode, err := getRes(res.Resource)
 		if err != nil || statuscode != 200 {
-			// TODO: call telegram
 			telega(configtg.APIkey, res.Resource, err.Error(), statuscode, res.Chats)
-			//fmt.Printf("Error - %v\n", err)
-			//fmt.Printf("Resource - %s\n", res.Resource)
-			//fmt.Printf("Status Code - %d\n", statuscode)
+			// fmt.Printf("Error - %v\n", err)
+			// fmt.Printf("Resource - %s\n", res.Resource)
+			// fmt.Printf("Status Code - %d\n", statuscode)
 		}
 	}
+
+	// Ставим расписание заданий
+	s, _ := gocron.NewScheduler()
+	defer func() { _ = s.Shutdown() }()
+	for _, res := range resources {
+		j, err := s.NewJob(
+			gocron.CronJob(
+				// standard cron tab parsing
+				res.Cron,
+				false,
+			),
+			gocron.NewTask(
+				func() {
+					statuscode, err := getRes(res.Resource)
+					if err != nil || statuscode != 200 {
+						telega(configtg.APIkey, res.Resource, err.Error(), statuscode, res.Chats)
+					}
+				},
+			),
+		)
+		if err != nil {
+			fmt.Println(err)
+		} else {
+			fmt.Printf("Job ID %s for resource: %s\n", j.ID().String(), res.Resource)
+		}
+	}
+
+	// start the scheduler
+	s.Start()
+
+	select {} // wait forever
 }

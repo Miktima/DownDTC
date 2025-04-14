@@ -8,10 +8,11 @@ COPY . .
 
 RUN go build -o downdtc downdtc.go
 
-FROM drpo-docker.rian.ru/base/ubuntu:20.04
+FROM drpo-docker.rian.ru/base/ubuntu:24.04
 
 WORKDIR /build
 
 COPY --from=builder /build/downdtc /build/downdtc
+COPY *.json /build/.
 
 CMD ["./downdtc"]
