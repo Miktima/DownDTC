@@ -146,40 +146,64 @@ func main() {
 		}
 	}
 
-	// Проверяем ресурсы
-	for _, res := range resources {
-		statuscode, err := getRes(res.Resource)
-		if err != nil || statuscode != 200 {
-			telega(configtg.APIkey, res.Resource, err.Error(), statuscode, res.Chats)
-			// fmt.Printf("Error - %v\n", err)
-			// fmt.Printf("Resource - %s\n", res.Resource)
-			// fmt.Printf("Status Code - %d\n", statuscode)
-		}
-	}
+	// Проверяем ресурсы (до gocron)
+	// for _, res := range resources {
+	// statuscode, err := getRes(res.Resource)
+	// if err != nil || statuscode != 200 {
+	// telega(configtg.APIkey, res.Resource, err.Error(), statuscode, res.Chats)
+	// fmt.Printf("Error - %v\n", err)
+	// fmt.Printf("Resource - %s\n", res.Resource)
+	// fmt.Printf("Status Code - %d\n", statuscode)
+	// }
+	// }
 
-	// Ставим расписание заданий
+	// Инициируем расписание
 	s, _ := gocron.NewScheduler()
 	defer func() { _ = s.Shutdown() }()
-	for _, res := range resources {
-		j, err := s.NewJob(
-			gocron.CronJob(
-				// standard cron tab parsing
-				res.Cron,
-				false,
-			),
-			gocron.NewTask(
-				func() {
-					statuscode, err := getRes(res.Resource)
-					if err != nil || statuscode != 200 {
-						telega(configtg.APIkey, res.Resource, err.Error(), statuscode, res.Chats)
-					}
-				},
-			),
-		)
-		if err != nil {
-			fmt.Println(err)
+
+	// Ставим расписание заданий на проверку ошибок (доступа)
+	for key, res := range resources {
+		// Первый ресурс в списке для проверки работы крона, надо поставить ресур который "всегда" доступен
+		if key == 0 {
+			j, err := s.NewJob(
+				gocron.CronJob(
+					// standard cron tab parsing
+					res.Cron,
+					false,
+				),
+				gocron.NewTask(
+					func() {
+						statuscode, _ := getRes(res.Resource)
+						telega(configtg.APIkey, res.Resource, "OK", statuscode, res.Chats)
+					},
+				),
+			)
+			if err != nil {
+				fmt.Println(err)
+			} else {
+				fmt.Printf("Job ID %s for resource: %s\n", j.ID().String(), res.Resource)
+			}
 		} else {
-			fmt.Printf("Job ID %s for resource: %s\n", j.ID().String(), res.Resource)
+			j, err := s.NewJob(
+				gocron.CronJob(
+					// standard cron tab parsing
+					res.Cron,
+					false,
+				),
+				gocron.NewTask(
+					func() {
+						statuscode, err := getRes(res.Resource)
+						if err != nil || statuscode != 200 {
+							telega(configtg.APIkey, res.Resource, err.Error(), statuscode, res.Chats)
+						}
+					},
+				),
+			)
+			if err != nil {
+				fmt.Println(err)
+			} else {
+				fmt.Printf("Job ID %s for resource: %s\n", j.ID().String(), res.Resource)
+			}
 		}
 	}
 
