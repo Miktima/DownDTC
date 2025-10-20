@@ -61,11 +61,14 @@ func telega(apikey, resource, err string, code int, chats []string) {
 	err = resmb.ReplaceAllString(err, "\\$1")
 
 	tgbody += err
-
-	http.DefaultTransport.(*http.Transport).TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
+	tr := &http.Transport{
+		TLSClientConfig:     &tls.Config{InsecureSkipVerify: false},
+		TLSHandshakeTimeout: 10 * time.Second,
+	}
+	// http.DefaultTransport.(*http.Transport).TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
 
 	// Send message to Telegram
-	client := &http.Client{}
+	client := &http.Client{Transport: tr}
 
 	url := "https://api.telegram.org/bot" + apikey + "/sendMessage"
 
